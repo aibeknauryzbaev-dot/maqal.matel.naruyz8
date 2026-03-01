@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8 Наурыз — Анаға құрмет | Своя игра</title>
+    <style>
+        :root {
+            --primary: #9c27b0; /* Күлгін */
+            --primary-light: #e1bee7;
+            --primary-dark: #6a1b9a;
+            --secondary: #ec407a; /* Қызғылт */
+            --bg-gradient-start: #fce4ec;
+            --bg-gradient-end: #f3e5f5;
+            --cell-bg: #ba68c8;
+            --cell-hover: #ab47bc;
+            --cell-disabled: #e0e0e0;
+            --text-light: #ffffff;
+            --text-dark: #333333;
+            --success: #4caf50;
+            --danger: #f44336;
+            --info: #2196f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation; /* Сенсорлық тақтада масштабтауды болдырмау үшін */
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end), #ffffff);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Декоративті элементтер (CSS арқылы) */
+        .decoration {
+            position: fixed;
+            font-size: 4rem;
+            opacity: 0.15;
+            z-index: -1;
+            user-select: none;
+            pointer-events: none;
+        }
+        .dec-1 { top: 5%; left: 5%; transform: rotate(-15deg); }
+        .dec-2 { top: 20%; right: 5%; font-size: 6rem; transform: rotate(20deg); }
+        .dec-3 { bottom: 15%; left: 10%; font-size: 5rem; }
+        .dec-4 { bottom: 5%; right: 10%; transform: rotate(-10deg); }
+
+        header {
+            text-align: center;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            backdrop-filter: blur(5px);
+            border-bottom: 3px solid var(--primary-light);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary-dark);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 0.2rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .controls span {
+            font-size: 1rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary { background-color: var(--primary); }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-secondary:hover { background-color: #d81b60; }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #388e3c; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: #d32f2f; }
+        .btn-info { background-color: var(--info); }
+        .btn-info:hover { background-color: #1976d2; }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem 1rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: 60px repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 1rem;
+            flex: 1;
+            max-height: 65vh;
+        }
+
+        .category-header {
+            background-color: var(--primary-dark);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .cell {
+            background-color: var(--cell-bg);
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .cell:hover:not(.disabled) {
+            background-color: var(--cell-hover);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+        }
+
+        .cell.disabled {
+            background-color: var(--cell-disabled);
+            color: #9e9e9e;
+            cursor: default;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: none;
+            transform: none;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            border: 3px solid var(--primary-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .team {
+            text-align: center;
+            flex: 1;
+        }
+
+        .team:first-child { border-right: 2px dashed var(--primary-light); }
+
+        .team h2 {
+            font-size: 1.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 0.2rem;
+        }
+
+        .team .score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--secondary);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 24px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 5px solid var(--primary-light);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-category {
+            font-size: 1.8rem;
+            color: #666;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .modal-question {
+            font-size: 3.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 2rem;
+            line-height: 1.3;
+            font-weight: bold;
+        }
+
+        .modal-input {
+            width: 100%;
+            font-size: 2.5rem;
+            padding: 1rem;
+            border: 3px solid var(--primary-light);
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+            outline: none;
+            color: var(--text-dark);
+        }
+
+        .modal-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+        }
+
+        .modal-feedback {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            min-height: 2.5rem;
+        }
+
+        .feedback-correct { color: var(--success); }
+        .feedback-wrong { color: var(--danger); }
+        .feedback-close { color: var(--info); }
+
+        .modal-correct-answer {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--bg-gradient-start);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-actions button {
+            font-size: 1.5rem;
+            padding: 1rem 2rem;
+        }
+
+        .score-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding-top: 2rem;
+            border-top: 2px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .score-actions button {
+            font-size: 1.5rem;
+            padding: 1rem 2rem;
+        }
+
+        /* Animations */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+        .bounce { animation: bounce 0.5s; }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            background-color: #f00;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        /* Instructions */
+        .instructions {
+            margin-top: 2rem;
+            background: rgba(255,255,255,0.8);
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .instructions h3 {
+            color: var(--primary-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            h1 { font-size: 1.5rem; }
+            .cell { font-size: 1.8rem; }
+            .category-header { font-size: 1rem; }
+            .team h2 { font-size: 1.2rem; }
+            .team .score { font-size: 2rem; }
+            .modal-question { font-size: 2rem; }
+            .modal-input { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Декорациялар -->
+    <div class="decoration dec-1">🌸</div>
+    <div class="decoration dec-2">🌷</div>
+    <div class="decoration dec-3">💖</div>
+    <div class="decoration dec-4">🌺</div>
+
+    <header>
+        <h1>8 Наурыз — Мақал-мәтел Jeopardy 🌸</h1>
+        <div class="controls">
+            <button class="btn-primary" onclick="initGame()">Қайта бастау</button>
+            <button class="btn-secondary" onclick="shuffleGame()">Араластыр</button>
+            <span>Толық экран: F11</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="scoreboard">
+            <div class="team" id="team-children">
+                <h2>Балалар 🧒👧</h2>
+                <div class="score" id="score-children">0</div>
+            </div>
+            <div class="team" id="team-parents">
+                <h2>Ата-аналар 👨‍👩‍👦</h2>
+                <div class="score" id="score-parents">0</div>
+            </div>
+        </div>
+
+        <div class="board" id="board">
+            <!-- Тор JS арқылы жасалады -->
+        </div>
+        
+        <div class="instructions">
+            <h3>📌 Нұсқаулық (Мұғалімге/Жүргізушіге):</h3>
+            <p>1. Ұяшықты басыңыз. Мақалдың басы шығады.<br>
+               2. Ойыншы жауабын ауызша айта алады немесе пернетақта арқылы енгізе алады.<br>
+               3. <b>"Жауапты тексеру"</b> автоматты түрде енгізілген сөзді тексереді (кіші/үлкен әріпке, артық бос орынға қарамайды).<br>
+               4. <b>"Жауабын көрсету"</b> дұрыс нұсқасын экранға шығарады.<br>
+               5. Ұпай беру үшін модалдың төменгі жағындағы <b>"Дұрыс — Балаларға"</b> немесе <b>"Дұрыс — Ата-аналарға"</b> батырмаларын басыңыз. Қате болса <b>"Қате / Жабу"</b> басыңыз.</p>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="modal-category" id="modal-category">Категория - 100</div>
+            <div class="modal-question" id="modal-question">Мақалдың басы...</div>
+            
+            <input type="text" class="modal-input" id="modal-input" placeholder="Жалғасын жазыңыз..." autocomplete="off">
+            
+            <div class="modal-feedback" id="modal-feedback"></div>
+            <div class="modal-correct-answer" id="modal-correct-answer">Дұрыс жауап</div>
+
+            <div class="modal-actions">
+                <button class="btn-info" onclick="checkAnswer()">Жауапты тексеру</button>
+                <button class="btn-secondary" onclick="showAnswer()">Жауабын көрсету</button>
+            </div>
+
+            <div class="score-actions">
+                <button class="btn-success" onclick="awardPoints('children')">Дұрыс — Балаларға 🏆</button>
+                <button class="btn-success" onclick="awardPoints('parents')">Дұрыс — Ата-аналарға 🏆</button>
+                <button class="btn-danger" onclick="closeModal(false)">Қате / Жабу ❌</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. МӘЛІМЕТТЕР БАЗАСЫ ---
+        const originalData = [
+            {
+                category: "Ана туралы",
+                questions: [
+                    { q: "Анаға қарап қыз өсер,", a: "әкеге қарап ұл өсер" },
+                    { q: "Ананың көңілі балада,", a: "баланың көңілі далада" },
+                    { q: "Ана сүті бой өсіреді,", a: "ана тілі ой өсіреді" },
+                    { q: "Жұмақтың кілті", a: "ананың табанының астында" },
+                    { q: "Ананың сүті тәтті,", a: "баланың тілі тәтті" }
+                ]
+            },
+            {
+                category: "Ата-ана қадірі",
+                questions: [
+                    { q: "Ата-ана қадірін", a: "балалы болғанда білерсің" },
+                    { q: "Әке — асқар тау,", a: "ана — бұлақ, бала — жағасындағы құрақ" },
+                    { q: "Атаңа не қылсаң,", a: "алдыңа сол келер" },
+                    { q: "Ұяда не көрсең,", a: "ұшқанда соны ілерсің" },
+                    { q: "Атадан өсиет қалмаса,", a: "баладан қасиет қалмайды" }
+                ]
+            },
+            {
+                category: "Құрмет пен ізет",
+                questions: [
+                    { q: "Үлкенге — құрмет,", a: "кішіге — ізет" },
+                    { q: "Әдепті бала — арлы бала,", a: "әдепсіз бала — сорлы бала" },
+                    { q: "Құрметтесең —", a: "құрмет көресің" },
+                    { q: "Тәрбие —", a: "тал бесіктен" },
+                    { q: "Сіз деген - әдеп,", a: "біз деген - көмек" }
+                ]
+            },
+            {
+                category: "Жақсы сөз, алғыс",
+                questions: [
+                    { q: "Жақсы сөз —", a: "жарым ырыс" },
+                    { q: "Жақсының жақсылығын айт,", a: "нұры тасысын" },
+                    { q: "Алғыс алған — арыс,", a: "қарғыс алған — қарыс" },
+                    { q: "Жақсылық жаса да, суға таста,", a: "балық білмесе, халық біледі" },
+                    { q: "Жылы-жылы сөйлесең,", a: "жылан інінен шығады" }
+                ]
+            },
+            {
+                category: "Отбасы және бірлік",
+                questions: [
+                    { q: "Бірлік болмай,", a: "тірлік болмас" },
+                    { q: "Отан —", a: "отбасынан басталады" },
+                    { q: "Көп түкірсе —", a: "көл" },
+                    { q: "Еңбек етсең ерінбей,", a: "тояды қарның тіленбей" },
+                    { q: "Адамның күні —", a: "адаммен" }
+                ]
+            }
+        ];
+
+        // --- 2. ОЙЫННЫҢ КҮЙІ (STATE) ---
+        let gameData = [];
+        let scores = { children: 0, parents: 0 };
+        let currentCell = null; // { catIdx, qIdx, value, element }
+        const points = [100, 200, 300, 400, 500];
+
+        // --- 3. ИНИЦИАЛИЗАЦИЯ ЖӘНЕ РЕНДЕР ---
+        function deepCopy(arr) {
+            return JSON.parse(JSON.stringify(arr));
+        }
+
+        function initGame() {
+            gameData = deepCopy(originalData);
+            scores = { children: 0, parents: 0 };
+            updateScores();
+            renderBoard();
+        }
+
+        function shuffleGame() {
+            gameData = deepCopy(originalData);
+            // Әр категория ішіндегі сұрақтарды араластыру
+            gameData.forEach(cat => {
+                for (let i = cat.questions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cat.questions[i], cat.questions[j]] = [cat.questions[j], cat.questions[i]];
+                }
+            });
+            scores = { children: 0, parents: 0 };
+            updateScores();
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            // 1. Категория тақырыптарын қосу
+            gameData.forEach(cat => {
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.innerText = cat.category;
+                board.appendChild(header);
+            });
+
+            // 2. Ұяшықтарды қосу (қатар-қатармен)
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.innerText = points[row];
+                    
+                    // Ұяшыққа басу оқиғасы
+                    cell.onclick = () => openQuestion(col, row, cell);
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function updateScores() {
+            document.getElementById('score-children').innerText = scores.children;
+            document.getElementById('score-parents').innerText = scores.parents;
+        }
+
+        // --- 4. МОДАЛ ЛОГИКАСЫ ---
+        const modal = document.getElementById('modal');
+        const mCategory = document.getElementById('modal-category');
+        const mQuestion = document.getElementById('modal-question');
+        const mInput = document.getElementById('modal-input');
+        const mFeedback = document.getElementById('modal-feedback');
+        const mCorrectAnswer = document.getElementById('modal-correct-answer');
+
+        function openQuestion(catIdx, qIdx, cellElement) {
+            if (cellElement.classList.contains('disabled')) return;
+
+            // Анимация
+            cellElement.classList.add('bounce');
+            setTimeout(() => cellElement.classList.remove('bounce'), 500);
+
+            const categoryInfo = gameData[catIdx];
+            const questionInfo = categoryInfo.questions[qIdx];
+            const pointValue = points[qIdx];
+
+            currentCell = {
+                catIdx: catIdx,
+                qIdx: qIdx,
+                value: pointValue,
+                element: cellElement,
+                answer: questionInfo.a
+            };
+
+            // Модал мазмұнын толтыру
+            mCategory.innerText = `${categoryInfo.category} - ${pointValue} ұпай`;
+            mQuestion.innerText = questionInfo.q;
+            mInput.value = '';
+            mFeedback.className = 'modal-feedback';
+            mFeedback.innerText = '';
+            mCorrectAnswer.style.display = 'none';
+            mCorrectAnswer.innerText = questionInfo.a;
+
+            // Модалды ашу
+            modal.classList.add('active');
+            setTimeout(() => mInput.focus(), 300);
+        }
+
+        function closeModal(wasAnswered) {
+            modal.classList.remove('active');
+            if (wasAnswered && currentCell) {
+                currentCell.element.classList.add('disabled');
+            }
+            currentCell = null;
+        }
+
+        // --- 5. ТЕКСЕРУ ЛОГИКАСЫ ---
+        function cleanText(str) {
+            // Артық белгілерді алып тастау, кіші әріпке айналдыру
+            return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+                      .toLowerCase()
+                      .replace(/\s{2,}/g, " ")
+                      .trim();
+        }
+
+        function checkAnswer() {
+            if (!currentCell) return;
+            
+            const userInput = cleanText(mInput.value);
+            const correctAnswer = cleanText(currentCell.answer);
+            
+            if (!userInput) {
+                mFeedback.innerText = "Өтінеміз, жауапты жазыңыз!";
+                mFeedback.className = 'modal-feedback feedback-close';
+                return;
+            }
+
+            // Қарапайым fuzzy сәйкестік: енгізілген сөздер дұрыс жауапта бар ма?
+            const userWords = userInput.split(' ');
+            const correctWords = correctAnswer.split(' ');
+            
+            let matchCount = 0;
+            userWords.forEach(word => {
+                // Түбір сөздерді ұстау үшін (қарапайым нұсқа: сөздің бір бөлігі ұқсаса)
+                if (word.length > 2 && correctAnswer.includes(word.substring(0, word.length - 2))) {
+                    matchCount++;
+                } else if (correctWords.includes(word)) {
+                    matchCount++;
+                }
+            });
+
+            const matchRatio = matchCount / correctWords.length;
+
+            if (matchRatio >= 0.6 || userInput === correctAnswer) {
+                mFeedback.innerText = "Өте жақсы! Дұрыс сияқты! ✅";
+                mFeedback.className = 'modal-feedback feedback-correct';
+            } else {
+                mFeedback.innerText = "Кішкене қате бар немесе толық емес. Мұғалім шешеді! 🤔";
+                mFeedback.className = 'modal-feedback feedback-wrong';
+            }
+        }
+
+        function showAnswer() {
+            mCorrectAnswer.style.display = 'block';
+        }
+
+        // --- 6. ҰПАЙ БЕРУ ЖӘНЕ АНИМАЦИЯ ---
+        function awardPoints(team) {
+            if (!currentCell) return;
+
+            scores[team] += currentCell.value;
+            updateScores();
+            
+            // Жеңіл конфетти анимациясы
+            createConfetti();
+            
+            closeModal(true);
+        }
+
+        function createConfetti() {
+            const colors = ['#fce4ec', '#f8bbd0', '#f48fb1', '#f06292', '#e91e63', '#ba68c8', '#ce93d8'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Кездейсоқ позиция мен түс
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Дөңгелек немесе төртбұрыш
+                if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
+                
+                document.body.appendChild(confetti);
+                
+                // Анимация (төмен құлау)
+                const duration = Math.random() * 2 + 1;
+                confetti.animate([
+                    { transform: `translate3d(0, -10vh, 0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${Math.random()*200-100}px, 100vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    easing: 'cubic-bezier(.37,0,.63,1)'
+                });
+                
+                // DOM-нан өшіру
+                setTimeout(() => confetti.remove(), duration * 1000);
+            }
+        }
+
+        // Бастапқы қосылу
+        window.onload = initGame;
+    </script>
+</body>
+</html>
