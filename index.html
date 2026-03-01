@@ -265,21 +265,49 @@
             font-weight: bold;
         }
 
-        .modal-input {
-            width: 100%;
-            font-size: 2.5rem;
-            padding: 1rem;
-            border: 3px solid var(--primary-light);
-            border-radius: 12px;
-            text-align: center;
+        .modal-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
             margin-bottom: 2rem;
-            outline: none;
-            color: var(--text-dark);
         }
 
-        .modal-input:focus {
+        .option-btn {
+            padding: 1rem;
+            font-size: 1.5rem;
+            border: 3px solid var(--primary-light);
+            border-radius: 12px;
+            background: white;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .option-btn:hover:not(.disabled) {
+            background: var(--bg-gradient-start);
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct {
+            background: var(--success) !important;
+            color: white !important;
+            border-color: var(--success) !important;
+        }
+
+        .option-btn.wrong {
+            background: var(--danger) !important;
+            color: white !important;
+            border-color: var(--danger) !important;
+        }
+
+        .option-btn.disabled {
+            cursor: not-allowed;
+            pointer-events: none;
+            opacity: 0.8;
         }
 
         .modal-feedback {
@@ -371,7 +399,8 @@
             .team h2 { font-size: 1.2rem; }
             .team .score { font-size: 2rem; }
             .modal-question { font-size: 2rem; }
-            .modal-input { font-size: 1.5rem; }
+            .modal-options { grid-template-columns: 1fr; }
+            .option-btn { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -411,10 +440,9 @@
         <div class="instructions">
             <h3>📌 Нұсқаулық (Мұғалімге/Жүргізушіге):</h3>
             <p>1. Ұяшықты басыңыз. Мақалдың басы шығады.<br>
-               2. Ойыншы жауабын ауызша айта алады немесе пернетақта арқылы енгізе алады.<br>
-               3. <b>"Жауапты тексеру"</b> автоматты түрде енгізілген сөзді тексереді (кіші/үлкен әріпке, артық бос орынға қарамайды).<br>
-               4. <b>"Жауабын көрсету"</b> дұрыс нұсқасын экранға шығарады.<br>
-               5. Ұпай беру үшін модалдың төменгі жағындағы <b>"Дұрыс — Балаларға"</b> немесе <b>"Дұрыс — Ата-аналарға"</b> батырмаларын басыңыз. Қате болса <b>"Қате / Жабу"</b> басыңыз.</p>
+               2. Ойыншыға берілген 4 нұсқаның біреуін таңдатыңыз.<br>
+               3. Нұсқаны басқан кезде жауаптың дұрыс не қате екені бірден көрсетіледі.<br>
+               4. Ұпай беру үшін модалдың төменгі жағындағы <b>"Дұрыс — Балаларға"</b> немесе <b>"Дұрыс — Ата-аналарға"</b> батырмаларын басыңыз. Қате болса <b>"Қате / Жабу"</b> басыңыз.</p>
         </div>
     </main>
 
@@ -424,15 +452,12 @@
             <div class="modal-category" id="modal-category">Категория - 100</div>
             <div class="modal-question" id="modal-question">Мақалдың басы...</div>
             
-            <input type="text" class="modal-input" id="modal-input" placeholder="Жалғасын жазыңыз..." autocomplete="off">
+            <div class="modal-options" id="modal-options">
+                <!-- Варианттар JS арқылы қосылады -->
+            </div>
             
             <div class="modal-feedback" id="modal-feedback"></div>
             <div class="modal-correct-answer" id="modal-correct-answer">Дұрыс жауап</div>
-
-            <div class="modal-actions">
-                <button class="btn-info" onclick="checkAnswer()">Жауапты тексеру</button>
-                <button class="btn-secondary" onclick="showAnswer()">Жауабын көрсету</button>
-            </div>
 
             <div class="score-actions">
                 <button class="btn-success" onclick="awardPoints('children')">Дұрыс — Балаларға 🏆</button>
@@ -502,14 +527,33 @@
         let scores = { children: 0, parents: 0 };
         let currentCell = null; // { catIdx, qIdx, value, element }
         const points = [100, 200, 300, 400, 500];
+        let allAnswersPool = [];
 
         // --- 3. ИНИЦИАЛИЗАЦИЯ ЖӘНЕ РЕНДЕР ---
         function deepCopy(arr) {
             return JSON.parse(JSON.stringify(arr));
         }
 
+        function buildAnswersPool() {
+            allAnswersPool = [];
+            originalData.forEach(cat => {
+                cat.questions.forEach(q => {
+                    allAnswersPool.push(q.a);
+                });
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function initGame() {
             gameData = deepCopy(originalData);
+            buildAnswersPool();
             scores = { children: 0, parents: 0 };
             updateScores();
             renderBoard();
@@ -564,7 +608,7 @@
         const modal = document.getElementById('modal');
         const mCategory = document.getElementById('modal-category');
         const mQuestion = document.getElementById('modal-question');
-        const mInput = document.getElementById('modal-input');
+        const mOptions = document.getElementById('modal-options');
         const mFeedback = document.getElementById('modal-feedback');
         const mCorrectAnswer = document.getElementById('modal-correct-answer');
 
@@ -590,15 +634,29 @@
             // Модал мазмұнын толтыру
             mCategory.innerText = `${categoryInfo.category} - ${pointValue} ұпай`;
             mQuestion.innerText = questionInfo.q;
-            mInput.value = '';
             mFeedback.className = 'modal-feedback';
             mFeedback.innerText = '';
             mCorrectAnswer.style.display = 'none';
             mCorrectAnswer.innerText = questionInfo.a;
 
+            // Варианттарды жасау
+            mOptions.innerHTML = '';
+            let options = [questionInfo.a];
+            let availableWrongs = allAnswersPool.filter(a => a !== questionInfo.a);
+            availableWrongs = shuffleArray(availableWrongs);
+            options.push(availableWrongs[0], availableWrongs[1], availableWrongs[2]);
+            options = shuffleArray(options);
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(btn, opt === questionInfo.a);
+                mOptions.appendChild(btn);
+            });
+
             // Модалды ашу
             modal.classList.add('active');
-            setTimeout(() => mInput.focus(), 300);
         }
 
         function closeModal(wasAnswered) {
@@ -610,53 +668,25 @@
         }
 
         // --- 5. ТЕКСЕРУ ЛОГИКАСЫ ---
-        function cleanText(str) {
-            // Артық белгілерді алып тастау, кіші әріпке айналдыру
-            return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-                      .toLowerCase()
-                      .replace(/\s{2,}/g, " ")
-                      .trim();
-        }
-
-        function checkAnswer() {
-            if (!currentCell) return;
+        function selectOption(btn, isCorrect) {
+            const allBtns = mOptions.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.classList.add('disabled')); // Басқа батырмаларды бұғаттау
             
-            const userInput = cleanText(mInput.value);
-            const correctAnswer = cleanText(currentCell.answer);
-            
-            if (!userInput) {
-                mFeedback.innerText = "Өтінеміз, жауапты жазыңыз!";
-                mFeedback.className = 'modal-feedback feedback-close';
-                return;
-            }
-
-            // Қарапайым fuzzy сәйкестік: енгізілген сөздер дұрыс жауапта бар ма?
-            const userWords = userInput.split(' ');
-            const correctWords = correctAnswer.split(' ');
-            
-            let matchCount = 0;
-            userWords.forEach(word => {
-                // Түбір сөздерді ұстау үшін (қарапайым нұсқа: сөздің бір бөлігі ұқсаса)
-                if (word.length > 2 && correctAnswer.includes(word.substring(0, word.length - 2))) {
-                    matchCount++;
-                } else if (correctWords.includes(word)) {
-                    matchCount++;
-                }
-            });
-
-            const matchRatio = matchCount / correctWords.length;
-
-            if (matchRatio >= 0.6 || userInput === correctAnswer) {
-                mFeedback.innerText = "Өте жақсы! Дұрыс сияқты! ✅";
+            if (isCorrect) {
+                btn.classList.add('correct');
+                mFeedback.innerText = "Өте жақсы! Дұрыс! ✅";
                 mFeedback.className = 'modal-feedback feedback-correct';
             } else {
-                mFeedback.innerText = "Кішкене қате бар немесе толық емес. Мұғалім шешеді! 🤔";
+                btn.classList.add('wrong');
+                mFeedback.innerText = "Қате! Дұрыс жауап жасылмен белгіленді.";
                 mFeedback.className = 'modal-feedback feedback-wrong';
+                // Дұрыс жауапты көрсету
+                allBtns.forEach(b => {
+                    if (b.innerText === currentCell.answer) {
+                        b.classList.add('correct');
+                    }
+                });
             }
-        }
-
-        function showAnswer() {
-            mCorrectAnswer.style.display = 'block';
         }
 
         // --- 6. ҰПАЙ БЕРУ ЖӘНЕ АНИМАЦИЯ ---
